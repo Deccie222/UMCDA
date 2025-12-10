@@ -9,3 +9,8 @@ License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
+Imports: 
+    R6,
+    data.table
+URL: https://github.com/Deccie222/UMCDA
+BugReports: https://github.com/Deccie222/UMCDA/issues
