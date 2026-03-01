@@ -6,3 +6,32 @@
 .quarto
 /doc/
 /Meta/
+
+# Temporary development scripts
+create_*.R
+fix_*.R
+generate_*.R
+test_*.R
+verify_*.R
+*_setup.R
+*_install.R
+
+# Temporary analysis and documentation files
+ANALYSIS_*.md
+DATASET_*.md
+DATA_*.md
+PACKAGE_STATUS.md
+SETUP_*.md
+VIGNETTES_SUMMARY.md
+ILLUSTRATIVE_EXAMPLES.md
+
+# Temporary data files
+*.csv
+judge_*.csv
+
+# UML diagrams (keep only essential ones)
+*_UML.puml
+*_UML_Simple.puml
+*_UML_Clean.puml
+*_UML_Minimal.puml
+!UML_Paper_Version_Simplified.puml
