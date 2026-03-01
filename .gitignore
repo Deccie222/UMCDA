@@ -7,6 +7,12 @@
 /doc/
 /Meta/
 
+# RStudio project file (not required for R package)
+*.Rproj
+
+# R profile (not required for R package)
+.Rprofile
+
 # Temporary development scripts
 create_*.R
 fix_*.R
@@ -16,22 +22,25 @@ verify_*.R
 *_setup.R
 *_install.R
 
-# Temporary analysis and documentation files
+# Non-essential documentation files
 ANALYSIS_*.md
 DATASET_*.md
 DATA_*.md
 PACKAGE_STATUS.md
+PACKAGE_IMPACTS.md
+PACKAGE_LIMITATIONS_AND_BENEFITS.md
 SETUP_*.md
 VIGNETTES_SUMMARY.md
 ILLUSTRATIVE_EXAMPLES.md
+ILLUSTRATIVE_EXAMPLES_SUMMARY.md
+SUPPLIER_DATASET_DESCRIPTION.md
+RELEASE_CHECKLIST.md
+tests/README.md
+tests/TEST_COVERAGE.md
 
 # Temporary data files
 *.csv
 judge_*.csv
 
-# UML diagrams (keep only essential ones)
-*_UML.puml
-*_UML_Simple.puml
-*_UML_Clean.puml
-*_UML_Minimal.puml
-!UML_Paper_Version_Simplified.puml
+# UML diagrams
+*.puml
