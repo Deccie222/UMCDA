@@ -1,0 +1,236 @@
+---
+title: "Creating Task Objects in mcdaHub"
+author: "Wanting Zuo"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Creating Task Objects in mcdaHub}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5
+)
+```
+
+```{r setup, include = FALSE}
+library(mcdaHub)
+# Load datasets for vignette
+# Use data() in a new environment to avoid conflicts with R's built-in datasets
+env <- new.env()
+data(cars, package = "mcdaHub", envir = env)
+data(supplier, package = "mcdaHub", envir = env)
+data(employee, package = "mcdaHub", envir = env)
+cars_data <- env$cars
+supplier_data <- env$supplier
+employee_data <- env$employee
+```
+
+# Creating Task Objects in mcdaHub
+
+This vignette demonstrates how to create `TaskRanking`, `TaskSorting`, and `TaskChoice` objects in the mcdaHub package.
+
+## Overview
+
+Task objects define your decision problem. There are three types:
+
+- **TaskRanking**: Rank alternatives from best to worst
+- **TaskChoice**: Select the best alternative(s)
+- **TaskSorting**: Assign alternatives to predefined categories
+
+## TaskRanking Class
+
+`TaskRanking` is used to rank alternatives from best to worst.
+
+### Creating TaskRanking Object
+
+```{r task-ranking-create}
+# Create a ranking task
+# (cars_data is already loaded in the setup chunk)
+task_ranking <- TaskRanking$new(
+  alt = cars_data$alt,
+  crit = cars_data$crit,
+  perf = cars_data$perf,
+  weight = cars_data$weight,
+  direction = cars_data$direction
+)
+
+# Display the task
+print(task_ranking)
+```
+
+### Parameters
+
+- `alt`: Character vector of alternative names
+- `crit`: Character vector of criterion names
+- `perf`: Numeric matrix (alternatives × criteria) - performance values
+- `weight`: Numeric vector of criterion weights (should sum to 1)
+- `direction`: Character vector ("min" or "max" for each criterion)
+
+### Example: Viewing Task Components
+
+```{r task-ranking-components}
+# Access task components
+cat("Alternatives:\n")
+print(task_ranking$alt)
+
+cat("\nCriteria:\n")
+print(task_ranking$crit)
+
+cat("\nPerformance Matrix:\n")
+print(task_ranking$perf)
+
+cat("\nWeights:\n")
+print(task_ranking$weight)
+
+cat("\nDirections:\n")
+print(task_ranking$direction)
+```
+
+## TaskChoice Class
+
+`TaskChoice` is used to select the best alternative(s).
+
+### Creating TaskChoice Object
+
+```{r task-choice-create}
+# Create a choice task (same structure as ranking)
+task_choice <- TaskChoice$new(
+  alt = cars_data$alt,
+  crit = cars_data$crit,
+  perf = cars_data$perf,
+  weight = cars_data$weight,
+  direction = cars_data$direction
+)
+
+# Display the task
+print(task_choice)
+```
+
+### Parameters
+
+Same as `TaskRanking`:
+- `alt`: Character vector of alternative names
+- `crit`: Character vector of criterion names
+- `perf`: Numeric matrix (alternatives × criteria)
+- `weight`: Numeric vector of criterion weights
+- `direction`: Character vector ("min" or "max" for each criterion)
+
+**Note:** `TaskChoice` uses the same input format as `TaskRanking`, but the result interpretation differs (selects best alternative vs. full ranking).
+
+## TaskSorting Class
+
+`TaskSorting` is used to assign alternatives to predefined categories.
+
+### Method 1: Traditional Sorting (with Profile Matrix)
+
+```{r task-sorting-traditional}
+# Create a sorting task with profile matrix
+# Ensure prof is a numeric matrix (not a vector or data.frame)
+prof_matrix <- as.matrix(cars_data$prof)
+# Ensure it's numeric (as.matrix() might create character matrix if data has factors)
+if (!is.numeric(prof_matrix)) {
+  prof_matrix <- matrix(as.numeric(prof_matrix), nrow = nrow(prof_matrix), ncol = ncol(prof_matrix))
+  rownames(prof_matrix) <- rownames(cars_data$prof)
+  colnames(prof_matrix) <- colnames(cars_data$prof)
+}
+task_sorting <- TaskSorting$new(
+  alt = cars_data$alt,
+  crit = cars_data$crit,
+  perf = cars_data$perf,
+  weight = cars_data$weight,
+  direction = cars_data$direction,
+  cat_names = cars_data$cat_names,
+  prof = prof_matrix,
+  assign_rule = "pessimistic"
+)
+
+# Display the task
+print(task_sorting)
+```
+
+### Parameters for Traditional Sorting
+
+- `alt`: Character vector of alternative names
+- `crit`: Character vector of criterion names
+- `perf`: Numeric matrix (alternatives × criteria)
+- `weight`: Numeric vector of criterion weights
+- `direction`: Character vector ("min" or "max" for each criterion)
+- `cat_names`: Character vector of category names (e.g., c("Low", "Medium", "High"))
+- `prof`: Numeric matrix (profiles × criteria) - profile performance values
+- `assign_rule`: "pessimistic" or "optimistic" assignment rule
+
+### Method 2: AHPSort (with Pairwise Comparisons)
+
+```{r task-sorting-ahp}
+# Create a sorting task with AHPSort data
+# Note: For AHPSort, prof is not needed - explicitly set to NULL
+# prof_order is optional metadata, not required for TaskSorting initialization
+# Only pass the fields that employee_data contains (no prof field)
+task_sorting_ahp <- TaskSorting$new(
+  alt = employee_data$alt,
+  crit = employee_data$crit,
+  cat_names = employee_data$cat_names,
+  pair_crit = employee_data$pair_crit,
+  judge_alt_profile = employee_data$judge_alt_profile,
+  prof = NULL,  # Explicitly set to NULL for AHPSort
+  assign_rule = "pessimistic"
+)
+
+# Display the task
+print(task_sorting_ahp)
+```
+
+### Parameters for AHPSort
+
+- `alt`: Character vector of alternative names
+- `crit`: Character vector of criterion names
+- `cat_names`: Character vector of category names
+- `pair_crit`: Pairwise comparison matrix for criteria (must have rownames and colnames)
+- `judge_alt_profile`: Data.frame with columns: criterion, alt, profile, value
+- `prof_order`: Character vector of profile order (from worst to best)
+- `assign_rule`: "pessimistic" or "optimistic" assignment rule
+
+### Example: Viewing AHPSort Task Components
+
+```{r task-sorting-ahp-components}
+# Access task components
+cat("Alternatives:\n")
+print(task_sorting_ahp$alt)
+
+cat("\nCriteria:\n")
+print(task_sorting_ahp$crit)
+
+cat("\nCategory Names:\n")
+print(task_sorting_ahp$cat_names)
+
+cat("\nProfile Order (from employee_data, not stored in TaskSorting):\n")
+print(employee_data$prof_order)
+
+cat("\nCriteria Pairwise Comparison Matrix:\n")
+print(task_sorting_ahp$pair_crit)
+
+cat("\nAlternative-Profile Judgments:\n")
+print(head(task_sorting_ahp$judge_alt_profile))
+```
+
+## Summary
+
+| Task Type | Purpose | Key Parameters |
+|-----------|---------|----------------|
+| `TaskRanking` | Rank alternatives | `alt`, `crit`, `perf`, `weight`, `direction` |
+| `TaskChoice` | Select best alternative(s) | Same as `TaskRanking` |
+| `TaskSorting` | Assign to categories | Traditional: `prof`, `cat_names`<br>AHPSort: `pair_crit`, `judge_alt_profile`, `prof_order` |
+
+## Next Steps
+
+After creating a task object, you can:
+1. Use a `Decider` object to solve it (see `vignette("02-decider-and-solve", package = "mcdaHub")`)
+2. Validate the task using `task$validate()`
+3. Access task components for inspection
+

@@ -1,0 +1,75 @@
+@startuml Core_Classes_Interaction_Diagram_Simple
+
+' ===============================
+' Global style for academic paper
+' ===============================
+hide circle
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam classMethodIconSize 0
+skinparam monochrome true
+skinparam class {
+  BackgroundColor White
+  BorderColor Black
+  ArrowColor Black
+  FontSize 11
+}
+skinparam arrow {
+  Color Black
+  Thickness 1
+}
+
+!define PUBLIC +
+!define PRIVATE -
+!define PROTECTED #
+
+' ============================================
+' Core Abstract Base Classes
+' ============================================
+
+abstract class TaskDecision {
+  PUBLIC type : character
+  PUBLIC task_data : list
+  --
+  PUBLIC initialize(...)
+  PUBLIC validate()
+  PUBLIC n_alt() : integer
+  PUBLIC n_crit() : integer
+  PUBLIC get_perf(alt_name, crit_name)
+  PUBLIC alt_names() : character[]
+  PUBLIC crit_names() : character[]
+}
+
+abstract class Decider {
+  PUBLIC state : list
+  --
+  PUBLIC initialize() : Decider
+  PUBLIC solve(task : TaskDecision) : TaskResult
+  --
+  PRIVATE {abstract} compute(task : TaskDecision) : numeric
+}
+
+abstract class TaskResult {
+  PUBLIC task_type : character
+  PUBLIC raw_result : numeric
+  PUBLIC metadata : list
+  --
+  PUBLIC initialize(task_type, raw_result, metadata) : TaskResult
+}
+
+' ============================================
+' Core Interaction Relationships
+' ============================================
+
+' Decider uses TaskDecision as input
+Decider ..> TaskDecision : "solve(task)"
+Decider ..> TaskDecision : uses
+
+' Decider creates and returns TaskResult
+Decider ..> TaskResult : creates
+Decider ..> TaskResult : "returns"
+
+' TaskResult stores metadata from Decider
+TaskResult ..> Decider : "metadata contains\ndecider state"
+
+@enduml

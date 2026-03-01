@@ -1,0 +1,133 @@
+@startuml TaskResult_Class_Diagram_Paper
+
+' ===============================
+' Global style for academic paper
+' ===============================
+hide circle
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam classMethodIconSize 0
+skinparam monochrome true
+skinparam class {
+  BackgroundColor White
+  BorderColor Black
+  ArrowColor Black
+  FontSize 11
+}
+
+!define PUBLIC +
+!define PRIVATE -
+!define PROTECTED #
+
+' ============================================
+' TaskResult Abstract Base Class
+' ============================================
+
+abstract class TaskResult {
+  PUBLIC task_type : character
+  PUBLIC raw_result : numeric
+  PUBLIC metadata : list
+  --
+  PUBLIC initialize(task_type : character, raw_result : numeric, metadata : list) : TaskResult
+}
+
+note right of TaskResult
+  **Abstract base class for MCDA results**
+  
+  Stores raw algorithm results and metadata.
+  Not intended for direct instantiation.
+  Users should obtain result objects via
+  Decider$solve() methods.
+end note
+
+' ============================================
+' ResultRanking Class
+' ============================================
+
+class ResultRanking {
+  PUBLIC ranking_table : data.frame
+  --
+  PUBLIC initialize(raw_result : numeric[], metadata : list) : ResultRanking
+  PUBLIC print(...)
+  --
+  PRIVATE n_alternatives : integer
+}
+
+note right of ResultRanking
+  **Result class for ranking problems**
+  
+  ranking_table contains:
+  - alt: Alternative names
+  - value: Algorithm scores
+  - rank: Ranking (1 = best)
+  
+  n_alternatives is stored internally
+  but can be obtained via
+  nrow(ranking_table).
+end note
+
+' ============================================
+' ResultSorting Class
+' ============================================
+
+class ResultSorting {
+  PUBLIC categories : character[]
+  PUBLIC sorting_table : data.frame
+  --
+  PUBLIC initialize(raw_result : numeric[], metadata : list) : ResultSorting
+  PUBLIC print(...)
+  --
+  PRIVATE assign_categories(raw_result : numeric[], metadata : list) : character[]
+}
+
+note right of ResultSorting
+  **Result class for sorting problems**
+  
+  categories: Named vector mapping
+  alternatives to category names.
+  
+  sorting_table contains:
+  - alt: Alternative names
+  - value: Algorithm scores
+  - category: Assigned category
+  
+  assign_categories() implements
+  AHPSort assignment logic based on
+  profile flows and assignment rule
+  (pessimistic/optimistic).
+end note
+
+' ============================================
+' ResultChoice Class
+' ============================================
+
+class ResultChoice {
+  PUBLIC choice : character[]
+  PUBLIC choice_table : data.frame
+  --
+  PUBLIC initialize(raw_result : numeric[], metadata : list) : ResultChoice
+  PUBLIC print(...)
+}
+
+note right of ResultChoice
+  **Result class for choice problems**
+  
+  choice: Character vector of chosen
+  alternative(s) with maximum value.
+  
+  choice_table contains:
+  - alt: Alternative names
+  - value: Algorithm scores
+  - is_choice: Logical flag
+end note
+
+' ============================================
+' Inheritance Relationships
+' ============================================
+
+TaskResult <|-- ResultRanking
+TaskResult <|-- ResultSorting
+TaskResult <|-- ResultChoice
+
+@enduml
+

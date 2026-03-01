@@ -1,0 +1,72 @@
+@startuml WeightPerturbation_Class_Diagram_Paper
+
+' ===============================
+' Global style for academic paper
+' ===============================
+hide circle
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam classMethodIconSize 0
+skinparam monochrome true
+skinparam class {
+  BackgroundColor White
+  BorderColor Black
+  ArrowColor Black
+  FontSize 11
+}
+
+!define PUBLIC +
+!define PRIVATE -
+!define PROTECTED #
+
+' ============================================
+' WeightPerturbation Class
+' ============================================
+
+class WeightPerturbation {
+  PUBLIC task : TaskRanking
+  PUBLIC decider : Decider
+  PUBLIC perturb_rg : numeric
+  PUBLIC perturb_n : integer
+  PUBLIC orig_rslt : ResultRanking
+  PUBLIC perturb_w : matrix
+  PUBLIC perturb_rslt : list
+  --
+  PUBLIC initialize(task : TaskRanking, decider : Decider, perturb_rg : numeric, perturb_n : integer) : WeightPerturbation
+  PUBLIC weight_perturb() : WeightPerturbation
+  PUBLIC perturb_rank() : matrix
+  PUBLIC perturb_stab_plot(type : character) : ggplot
+  PUBLIC perturb_corr_heatmap(method : character) : pheatmap
+  --
+  PRIVATE generate_oat_weights() : matrix
+  PRIVATE copy_task(new_weights : numeric[]) : TaskRanking
+  PRIVATE perturb_rank_corr(method : character) : matrix
+}
+
+note right of WeightPerturbation
+  **Weight Perturbation Analysis**
+  
+  Implements One-At-A-Time (OAT) method:
+  - Varies one criterion weight at a time
+  - Keeps other weights proportional
+  - Generates perturbed weight sets
+  - Solves task for each perturbation
+  - Provides stability analysis tools
+  
+  **Key Methods:**
+  - weight_perturb(): Run OAT analysis
+  - perturb_rank(): Extract rank matrix
+  - perturb_stab_plot(): Visualize stability
+  - perturb_corr_heatmap(): Correlation heatmap
+end note
+
+' ============================================
+' Dependencies
+' ============================================
+
+WeightPerturbation ..> TaskRanking : uses
+WeightPerturbation ..> Decider : uses
+WeightPerturbation ..> ResultRanking : creates
+WeightPerturbation ..> TaskRanking : "copy_task()\ncreates new"
+
+@enduml

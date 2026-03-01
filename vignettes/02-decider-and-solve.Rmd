@@ -1,0 +1,419 @@
+---
+title: "Creating Decider Objects and Using solve() in mcdaHub"
+author: "Wanting Zuo"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Creating Decider Objects and Using solve() in mcdaHub}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5
+)
+```
+
+```{r setup, include = FALSE}
+library(mcdaHub)
+# Load datasets for vignette
+# Use data() in a new environment to avoid conflicts with R's built-in datasets
+env <- new.env()
+data(cars, package = "mcdaHub", envir = env)
+data(supplier, package = "mcdaHub", envir = env)
+data(employee, package = "mcdaHub", envir = env)
+cars_data <- env$cars
+supplier_data <- env$supplier
+employee_data <- env$employee
+```
+
+# Creating Decider Objects and Using solve() in mcdaHub
+
+This vignette demonstrates how to create `DeciderTOPSIS`, `DeciderPROMETHEE`, and `DeciderAHP` objects and use their `solve()` method to solve MCDA tasks.
+
+## Overview
+
+Decider objects implement MCDA algorithms. There are three types:
+
+- **DeciderTOPSIS**: TOPSIS method (Technique for Order Preference by Similarity to Ideal Solution)
+- **DeciderPROMETHEE**: PROMETHEE II method (Preference Ranking Organization Method)
+- **DeciderAHP**: AHP method (Analytic Hierarchy Process) and AHPSort
+
+## DeciderTOPSIS Class
+
+### Creating DeciderTOPSIS Object
+
+```{r decider-topsis-create}
+# Create a TOPSIS decider
+decider_topsis <- DeciderTOPSIS$new()
+
+# The decider is ready to use
+class(decider_topsis)
+```
+
+### Using solve() for Ranking Tasks
+
+```{r decider-topsis-ranking}
+# Create a ranking task
+task_ranking <- TaskRanking$new(
+  alt = cars_data$alt,
+  crit = cars_data$crit,
+  perf = cars_data$perf,
+  weight = cars_data$weight,
+  direction = cars_data$direction
+)
+
+# Create decider
+decider_topsis <- DeciderTOPSIS$new()
+
+# Solve the task
+result <- decider_topsis$solve(task_ranking)
+
+# View results
+print(result)
+
+# Access ranking table
+result$ranking_table
+```
+
+### Using solve() for Choice Tasks
+
+```{r decider-topsis-choice}
+# Create a choice task
+task_choice <- TaskChoice$new(
+  alt = cars_data$alt,
+  crit = cars_data$crit,
+  perf = cars_data$perf,
+  weight = cars_data$weight,
+  direction = cars_data$direction
+)
+
+# Create decider
+decider_topsis <- DeciderTOPSIS$new()
+
+# Solve the choice task
+result_choice <- decider_topsis$solve(task_choice)
+
+# View results
+print(result_choice)
+
+# Access selected alternatives
+result_choice$choice_table
+```
+
+### Using solve() for Sorting Tasks
+
+```{r decider-topsis-sorting}
+# Create a sorting task
+# Ensure prof is a numeric matrix (not a vector or data.frame)
+prof_matrix <- as.matrix(cars_data$prof)
+# Ensure it's numeric (as.matrix() might create character matrix if data has factors)
+if (!is.numeric(prof_matrix)) {
+  prof_matrix <- matrix(as.numeric(prof_matrix), nrow = nrow(prof_matrix), ncol = ncol(prof_matrix))
+  rownames(prof_matrix) <- rownames(cars_data$prof)
+  colnames(prof_matrix) <- colnames(cars_data$prof)
+}
+task_sorting <- TaskSorting$new(
+  alt = cars_data$alt,
+  crit = cars_data$crit,
+  perf = cars_data$perf,
+  weight = cars_data$weight,
+  direction = cars_data$direction,
+  cat_names = cars_data$cat_names,
+  prof = prof_matrix,
+  assign_rule = "pessimistic"
+)
+
+# Create decider
+decider_topsis <- DeciderTOPSIS$new()
+
+# Solve the sorting task
+result_sorting <- decider_topsis$solve(task_sorting)
+
+# View results
+print(result_sorting)
+
+# Access sorting table
+result_sorting$sorting_table
+```
+
+## DeciderPROMETHEE Class
+
+### Creating DeciderPROMETHEE Object
+
+```{r decider-promethee-create}
+# Create a PROMETHEE decider
+decider_promethee <- DeciderPROMETHEE$new()
+
+# The decider is ready to use
+class(decider_promethee)
+```
+
+### Using solve() for Ranking Tasks
+
+```{r decider-promethee-ranking}
+# Create a ranking task
+task_ranking <- TaskRanking$new(
+  alt = cars_data$alt,
+  crit = cars_data$crit,
+  perf = cars_data$perf,
+  weight = cars_data$weight,
+  direction = cars_data$direction
+)
+
+# Create decider
+decider_promethee <- DeciderPROMETHEE$new()
+
+# Solve the task
+result <- decider_promethee$solve(task_ranking)
+
+# View results
+print(result)
+
+# Access metadata (leaving flow, entering flow, net flow)
+result$metadata
+```
+
+### Using solve() for Choice Tasks
+
+```{r decider-promethee-choice}
+# Create a choice task
+task_choice <- TaskChoice$new(
+  alt = cars_data$alt,
+  crit = cars_data$crit,
+  perf = cars_data$perf,
+  weight = cars_data$weight,
+  direction = cars_data$direction
+)
+
+# Create decider
+decider_promethee <- DeciderPROMETHEE$new()
+
+# Solve the choice task
+result_choice <- decider_promethee$solve(task_choice)
+
+# View results
+print(result_choice)
+```
+
+### Using solve() for Sorting Tasks
+
+```{r decider-promethee-sorting, eval = FALSE}
+# Create a sorting task
+# Ensure prof is a numeric matrix (not a vector or data.frame)
+prof_matrix <- as.matrix(cars_data$prof)
+# Ensure it's numeric (as.matrix() might create character matrix if data has factors)
+if (!is.numeric(prof_matrix)) {
+  prof_matrix <- matrix(as.numeric(prof_matrix), nrow = nrow(prof_matrix), ncol = ncol(prof_matrix))
+  rownames(prof_matrix) <- rownames(cars_data$prof)
+  colnames(prof_matrix) <- colnames(cars_data$prof)
+}
+task_sorting <- TaskSorting$new(
+  alt = cars_data$alt,
+  crit = cars_data$crit,
+  perf = cars_data$perf,
+  weight = cars_data$weight,
+  direction = cars_data$direction,
+  cat_names = cars_data$cat_names,
+  prof = prof_matrix
+)
+
+# Create decider
+decider_topsis <- DeciderTOPSIS$new()
+
+# Solve the sorting task 
+result_sorting <- decider_topsis$solve(task_sorting)
+
+# View results
+print(result_sorting)
+
+# Access sorting table
+result_sorting$sorting_table
+```
+
+## DeciderAHP Class
+
+### Creating DeciderAHP Object
+
+```{r decider-ahp-create}
+# Create an AHP decider
+decider_ahp <- DeciderAHP$new()
+
+# The decider is ready to use
+class(decider_ahp)
+```
+
+### Using solve() for Ranking Tasks (AHP)
+
+```{r decider-ahp-ranking}
+# Create a ranking task with pairwise comparisons
+task_ranking_ahp <- TaskRanking$new(
+  alt = supplier_data$alt,
+  crit = supplier_data$crit,
+  pair_crit = supplier_data$pair_crit,
+  pair_alt = supplier_data$pair_alt
+)
+
+# Create decider
+decider_ahp <- DeciderAHP$new()
+
+# Solve with AHP
+result_ranking_ahp <- decider_ahp$solve(task_ranking_ahp)
+
+# View results
+print(result_ranking_ahp)
+
+# Access metadata (criteria weights, consistency ratio)
+result_ranking_ahp$metadata
+```
+
+### Using solve() for Choice Tasks (AHP)
+
+```{r decider-ahp-choice}
+# Create a choice task with pairwise comparisons
+task_choice_ahp <- TaskChoice$new(
+  alt = supplier_data$alt,
+  crit = supplier_data$crit,
+  pair_crit = supplier_data$pair_crit,
+  pair_alt = supplier_data$pair_alt
+)
+
+# Create decider
+decider_ahp <- DeciderAHP$new()
+
+# Solve with AHP
+result_choice_ahp <- decider_ahp$solve(task_choice_ahp)
+
+# View results
+print(result_choice_ahp)
+```
+
+### Using solve() for Sorting Tasks (AHPSort)
+
+```{r decider-ahp-sorting}
+# Create a sorting task with AHPSort data
+# Note: For AHPSort, prof is not needed - explicitly set to NULL
+# prof_order is optional metadata, not required for TaskSorting initialization
+# Only pass the fields that employee_data contains (no prof field)
+task_sorting_ahp <- TaskSorting$new(
+  alt = employee_data$alt,
+  crit = employee_data$crit,
+  cat_names = employee_data$cat_names,
+  pair_crit = employee_data$pair_crit,
+  judge_alt_profile = employee_data$judge_alt_profile,
+  prof = NULL,  # Explicitly set to NULL for AHPSort
+  assign_rule = "pessimistic"
+)
+
+# Create decider
+decider_ahp <- DeciderAHP$new()
+
+# Solve with AHP (AHPSort method)
+result_sorting_ahp <- decider_ahp$solve(task_sorting_ahp)
+
+# View results
+print(result_sorting_ahp)
+
+# Access sorting table
+result_sorting_ahp$sorting_table
+```
+
+## Understanding Results
+
+### ResultRanking
+
+```{r understanding-result-ranking}
+# Solve a ranking task
+task <- TaskRanking$new(
+  alt = cars_data$alt,
+  crit = cars_data$crit,
+  perf = cars_data$perf,
+  weight = cars_data$weight,
+  direction = cars_data$direction
+)
+
+result <- DeciderTOPSIS$new()$solve(task)
+
+# Access ranking table
+ranking_table <- result$ranking_table
+print(ranking_table)
+
+# Access metadata
+metadata <- result$metadata
+names(metadata)
+```
+
+### ResultChoice
+
+```{r understanding-result-choice}
+# Solve a choice task
+task_choice <- TaskChoice$new(
+  alt = cars_data$alt,
+  crit = cars_data$crit,
+  perf = cars_data$perf,
+  weight = cars_data$weight,
+  direction = cars_data$direction
+)
+
+result_choice <- DeciderTOPSIS$new()$solve(task_choice)
+
+# Access choice table
+choice_table <- result_choice$choice_table
+print(choice_table)
+```
+
+### ResultSorting
+
+```{r understanding-result-sorting}
+# Solve a sorting task
+task_sorting <- TaskSorting$new(
+  alt = cars_data$alt,
+  crit = cars_data$crit,
+  perf = cars_data$perf,
+  weight = cars_data$weight,
+  direction = cars_data$direction,
+  cat_names = cars_data$cat_names,
+  prof = {
+    pm <- as.matrix(cars_data$prof)
+    if (!is.numeric(pm)) {
+      pm <- matrix(as.numeric(pm), nrow = nrow(pm), ncol = ncol(pm))
+      rownames(pm) <- rownames(cars_data$prof)
+      colnames(pm) <- colnames(cars_data$prof)
+    }
+    pm
+  },
+  assign_rule = "pessimistic"
+)
+
+result_sorting <- DeciderTOPSIS$new()$solve(task_sorting)
+
+# Access sorting table
+sorting_table <- result_sorting$sorting_table
+print(sorting_table)
+```
+
+## Summary
+
+| Decider | Ranking | Choice | Sorting | Notes |
+|---------|---------|--------|---------|-------|
+| `DeciderTOPSIS` | ✓ | ✓ | ✓ | Uses performance matrix |
+| `DeciderPROMETHEE` | ✓ | ✓ | ✓ | Uses performance matrix, FlowSort for sorting |
+| `DeciderAHP` | ✓ | ✓ | ✓ | Uses pairwise comparisons, AHPSort for sorting |
+
+## Common Workflow
+
+1. **Create a Task object** (see `vignette("01-task-classes", package = "mcdaHub")`)
+2. **Create a Decider object**: `decider <- DeciderTOPSIS$new()`
+3. **Solve the task**: `result <- decider$solve(task)`
+4. **View results**: `print(result)`
+5. **Access result components**: `result$ranking_table`, `result$metadata`, etc.
+
+## Next Steps
+
+- Learn about sensitivity analysis: `vignette("03-analysis-tools", package = "mcdaHub")`
+- Compare different algorithms using `AlgoRankCorrelation`
+

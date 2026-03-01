@@ -1,0 +1,83 @@
+@startuml Decider_Class_Diagram_Simple
+
+!define PUBLIC +
+!define PRIVATE -
+
+' ============================================
+' Decider Class Hierarchy
+' ============================================
+
+abstract class Decider {
+  PUBLIC state : list
+  --
+  PUBLIC initialize()
+  PUBLIC solve(task) : TaskResult
+  --
+  PRIVATE compute(task) : numeric
+}
+
+class DeciderAHP {
+  PUBLIC initialize()
+  --
+  PRIVATE compute(task) : numeric
+  PRIVATE check_ranking_choice_fields(task)
+  PRIVATE check_sorting_fields(task)
+  PRIVATE validate_ahp_inputs(pair_crit, pair_alt, crit, alt)
+  PRIVATE compute_ranking_choice(task) : numeric
+  PRIVATE compute_sorting(task) : numeric
+  PRIVATE find_weight(A) : list
+}
+
+class DeciderTOPSIS {
+  PUBLIC initialize()
+  --
+  PRIVATE compute(task) : numeric
+  PRIVATE check_ranking_choice_fields(task)
+  PRIVATE check_sorting_fields(task)
+  PRIVATE validate_topsis_inputs(A, w, alt, crit)
+  PRIVATE convert_directions_for_rmcda(A, d, alt, crit) : matrix
+  PRIVATE compute_ranking_choice(task) : numeric
+  PRIVATE compute_sorting(task) : numeric
+}
+
+class DeciderPROMETHEE {
+  PUBLIC initialize()
+  --
+  PRIVATE compute(task) : numeric
+  PRIVATE check_ranking_choice_fields(task)
+  PRIVATE check_sorting_fields(task)
+  PRIVATE convert_directions_for_rmcda(A, d, alt, crit) : matrix
+  PRIVATE compute_ranking_choice(task) : numeric
+  PRIVATE compute_sorting(task) : numeric
+}
+
+' Inheritance relationships
+Decider <|-- DeciderAHP
+Decider <|-- DeciderTOPSIS
+Decider <|-- DeciderPROMETHEE
+
+note right of Decider
+  Abstract base class for MCDA algorithms.
+  Uses template method pattern:
+  solve() -> compute() -> Result
+end note
+
+note right of DeciderAHP
+  Uses RMCDA::apply.AHP()
+  for ranking/choice tasks.
+  Implements AHPSort for sorting.
+end note
+
+note right of DeciderTOPSIS
+  Uses RMCDA::apply.TOPSIS()
+  for all task types.
+end note
+
+note right of DeciderPROMETHEE
+  Uses RMCDA::apply.PROMETHEE()
+  Implements FlowSort algorithm
+  for sorting tasks.
+end note
+
+@enduml
+

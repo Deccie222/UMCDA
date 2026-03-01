@@ -1,0 +1,87 @@
+@startuml TaskDecision_Class_Diagram
+
+' ===============================
+' Global style for academic paper
+' ===============================
+hide circle
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam classMethodIconSize 0
+skinparam monochrome true
+skinparam class {
+  BackgroundColor White
+  BorderColor Black
+  ArrowColor Black
+  FontSize 11
+}
+
+!define PUBLIC +
+!define PRIVATE -
+!define PROTECTED #
+
+' ============================================
+' TaskDecision Abstract Class (Paper Version)
+' ============================================
+
+abstract class TaskDecision {
+  PUBLIC type : character
+  PUBLIC task_data : list
+  --
+  PUBLIC initialize(..., type) : TaskDecision
+  PUBLIC validate() : TaskDecision
+  PUBLIC n_alt() : integer
+  PUBLIC n_crit() : integer
+  PUBLIC get_perf(alt_name, crit_name) : matrix | numeric
+  PUBLIC alt_names() : character[]
+  PUBLIC crit_names() : character[]
+  --
+  PRIVATE get_allowed_fields() : character[]
+  PRIVATE validate_field_names(data_list)
+  PRIVATE validate_perf()
+  PRIVATE validate_weight()
+  PRIVATE validate_direction()
+  PRIVATE validate_pair_crit()
+  PRIVATE validate_pair_alt()
+}
+
+' ============================================
+' TaskDecision Subclasses
+' ============================================
+
+class TaskRanking {
+  --
+  PUBLIC initialize(...) : TaskRanking
+  PUBLIC print()
+}
+
+class TaskSorting {
+  PUBLIC cat_names : character[]
+  PUBLIC prof : matrix | NULL
+  PUBLIC assign_rule : character
+  PUBLIC judge_alt_profile : data.frame | NULL
+  PUBLIC internal_profiles : character[]
+  --
+  PUBLIC initialize(..., cat_names, prof, assign_rule, judge_alt_profile, prof_order) : TaskSorting
+  PUBLIC print()
+  PUBLIC set_categories(cat_names, prof, prof_order)
+  PUBLIC validate()
+  --
+  PRIVATE generate_internal_profiles(cat_names) : character[]
+  PRIVATE validate_categories()
+}
+
+class TaskChoice {
+  --
+  PUBLIC initialize(...) : TaskChoice
+  PUBLIC print()
+}
+
+' ============================================
+' Inheritance Relationships
+' ============================================
+
+TaskDecision <|-- TaskRanking
+TaskDecision <|-- TaskSorting
+TaskDecision <|-- TaskChoice
+
+@enduml

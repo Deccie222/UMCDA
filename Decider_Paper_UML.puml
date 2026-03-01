@@ -1,0 +1,145 @@
+@startuml Decider_Class_Diagram_Paper
+
+' ===============================
+' Global style for academic paper
+' ===============================
+hide circle
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam classMethodIconSize 0
+skinparam monochrome true
+skinparam class {
+  BackgroundColor White
+  BorderColor Black
+  ArrowColor Black
+  FontSize 11
+}
+
+!define PUBLIC +
+!define PRIVATE -
+!define PROTECTED #
+
+' ============================================
+' Decider Abstract Base Class
+' ============================================
+
+abstract class Decider {
+  PUBLIC state : list
+  --
+  PUBLIC initialize() : Decider
+  PUBLIC solve(task : TaskDecision) : TaskResult
+  --
+  PRIVATE {abstract} compute(task : TaskDecision) : numeric
+  --
+  .. Template Method Pattern ..
+  .. solve() orchestrates computation ..
+}
+
+' ============================================
+' DeciderTOPSIS Class
+' ============================================
+
+class DeciderTOPSIS {
+  --
+  PUBLIC initialize() : DeciderTOPSIS
+  --
+  PRIVATE compute(task : TaskDecision) : numeric
+  PRIVATE check_ranking_choice_fields(task)
+  PRIVATE check_sorting_fields(task)
+  PRIVATE normalize_matrix(M : matrix) : matrix
+  PRIVATE compute_ideal_points(norm.M : matrix, d : character[]) : list
+  PRIVATE compute_ranking_choice(task : TaskDecision) : numeric
+  PRIVATE compute_sorting(task : TaskDecision) : numeric
+  --
+  .. TOPSIS Algorithm ..
+  .. Distance to ideal solutions ..
+}
+
+' ============================================
+' DeciderPROMETHEE Class
+' ============================================
+
+class DeciderPROMETHEE {
+  --
+  PUBLIC initialize() : DeciderPROMETHEE
+  --
+  PRIVATE compute(task : TaskDecision) : numeric
+  PRIVATE check_ranking_choice_fields(task)
+  PRIVATE check_sorting_fields(task)
+  PRIVATE preprocess_matrix(M : matrix, d : character[], row_ids : character[], crit_names : character[]) : matrix
+  PRIVATE compute_ranking_choice(task : TaskDecision) : numeric
+  PRIVATE compute_sorting(task : TaskDecision) : numeric
+  --
+  .. PROMETHEE Algorithm ..
+  .. Net flow calculation ..
+}
+
+' ============================================
+' DeciderAHP Class
+' ============================================
+
+class DeciderAHP {
+  --
+  PUBLIC initialize() : DeciderAHP
+  --
+  PRIVATE compute(task : TaskDecision) : numeric
+  PRIVATE check_ranking_choice_fields(task)
+  PRIVATE check_sorting_fields(task)
+  PRIVATE compute_ranking_choice(task : TaskDecision) : numeric
+  PRIVATE compute_sorting(task : TaskDecision) : numeric
+  PRIVATE find_weight(A : matrix) : list
+  --
+  .. AHP Algorithm ..
+  .. Pairwise comparisons ..
+}
+
+' ============================================
+' Inheritance Relationships
+' ============================================
+
+Decider <|-- DeciderTOPSIS
+Decider <|-- DeciderPROMETHEE
+Decider <|-- DeciderAHP
+
+' ============================================
+' Notes (Optional - can be removed for cleaner diagram)
+' ============================================
+
+note right of Decider
+  **Abstract Base Class**
+  
+  Implements Template Method Pattern:
+  - solve() is the public interface
+  - compute() is abstract, implemented by subclasses
+  - solve() handles validation and result creation
+end note
+
+note right of DeciderTOPSIS
+  **TOPSIS Method**
+  
+  Technique for Order Preference by
+  Similarity to Ideal Solution
+  
+  Supports: ranking, choice, sorting
+end note
+
+note right of DeciderPROMETHEE
+  **PROMETHEE Method**
+  
+  Preference Ranking Organization Method
+  for Enrichment Evaluations
+  
+  Supports: ranking, choice, sorting
+end note
+
+note right of DeciderAHP
+  **AHP Method**
+  
+  Analytic Hierarchy Process
+  
+  Supports: ranking, choice, sorting
+  (AHPSort for sorting)
+end note
+
+@enduml
+

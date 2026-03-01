@@ -1,0 +1,325 @@
+@startuml mcdaHub_Complete_Class_Diagram
+
+!define PUBLIC + 
+!define PRIVATE - 
+!define PROTECTED #
+
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+' ============================================
+' Task Result Classes
+' ============================================
+
+abstract class TaskResult {
+  PUBLIC task_type : character
+  PUBLIC raw_result : numeric
+  PUBLIC metadata : list
+  --
+  PUBLIC initialize(task_type, raw_result, metadata)
+}
+
+class ResultRanking {
+  PUBLIC ranking_table : data.frame
+  --
+  PRIVATE n_alternatives : integer
+  --
+  PUBLIC initialize(raw_result, metadata)
+  PUBLIC print()
+}
+
+class ResultSorting {
+  PUBLIC categories : character[]
+  PUBLIC sorting_table : data.frame
+  --
+  PUBLIC initialize(raw_result, metadata)
+  PUBLIC print()
+  PRIVATE assign_categories(raw_result, metadata)
+}
+
+class ResultChoice {
+  PUBLIC choice : character[]
+  PUBLIC choice_table : data.frame
+  --
+  PUBLIC initialize(raw_result, metadata)
+  PUBLIC print()
+}
+
+' ============================================
+' Task Decision Classes
+' ============================================
+
+abstract class TaskDecision {
+  PUBLIC type : character
+  PUBLIC task_data : list
+  --
+  PUBLIC initialize(..., type)
+  PUBLIC validate(normalize_weights)
+  PUBLIC n_alt() : integer
+  PUBLIC n_crit() : integer
+  PUBLIC get_perf(alt_name, crit_name) : matrix | numeric
+  PUBLIC set_perf(perf, normalize_weights)
+  PUBLIC alt_names() : character[]
+  PUBLIC crit_names() : character[]
+  PUBLIC set_w(weights, normalize_weights)
+  PUBLIC set_d(directions)
+  PUBLIC get_w(crit_name) : numeric
+  PUBLIC get_d(crit_name) : character
+  --
+  PRIVATE validate_field_names(data_list)
+  PRIVATE get_allowed_fields() : character[]
+  PRIVATE validate_perf()
+  PRIVATE validate_weight()
+  PRIVATE validate_direction()
+  PRIVATE validate_pair_crit()
+  PRIVATE validate_pair_alt()
+}
+
+class TaskRanking {
+  PUBLIC initialize(alt, crit, perf, weight, direction, normalize_weights)
+  PUBLIC print()
+}
+
+class TaskSorting {
+  PUBLIC n_cats : integer
+  PUBLIC cat_names : character[]
+  PUBLIC cats : list
+  PUBLIC prof : matrix
+  PUBLIC prof_order : character[]
+  PUBLIC assign_rule : character
+  PUBLIC internal_profiles : character[]
+  --
+  PUBLIC initialize(alt, crit, perf, weight, direction, n_cats, cat_names, cats, prof, prof_order, assign_rule, normalize_weights)
+  PUBLIC print()
+}
+
+class TaskChoice {
+  PUBLIC initialize(alt, crit, perf, weight, direction, normalize_weights)
+}
+
+' ============================================
+' Decider Classes (Algorithms)
+' ============================================
+
+abstract class Decider {
+  PUBLIC state : list
+  --
+  PUBLIC initialize()
+  PUBLIC solve(task : TaskDecision) : TaskResult
+  --
+  PRIVATE {abstract} compute(task : TaskDecision) : numeric
+}
+
+class DeciderTOPSIS {
+  PUBLIC initialize()
+  --
+  PRIVATE compute(task) : numeric
+  PRIVATE check_ranking_choice_fields(task)
+  PRIVATE check_sorting_fields(task)
+  PRIVATE validate_topsis_inputs(A, w, alt, crit)
+  PRIVATE convert_directions_for_rmcda(A, d, alt, crit)
+  PRIVATE compute_ranking_choice(task) : numeric
+  PRIVATE compute_sorting(task) : numeric
+}
+
+class DeciderPROMETHEE {
+  PUBLIC initialize()
+  --
+  PRIVATE compute(task) : numeric
+  PRIVATE check_ranking_choice_fields(task)
+  PRIVATE check_sorting_fields(task)
+  PRIVATE check_duplicated_alternatives(A, alt)
+  PRIVATE check_constant_criteria(A, crit)
+  PRIVATE convert_directions_for_rmcda(A, d, crit)
+  PRIVATE compute_ranking_choice(task) : numeric
+  PRIVATE compute_sorting(task) : numeric
+}
+
+class DeciderAHP {
+  PUBLIC initialize()
+  --
+  PRIVATE compute(task) : numeric
+  PRIVATE check_ranking_choice_fields(task)
+  PRIVATE check_sorting_fields(task)
+  PRIVATE validate_ahp_inputs(pair_crit, pair_alt, crit, alt)
+  PRIVATE compute_ranking_choice(task) : numeric
+  PRIVATE compute_sorting(task) : numeric
+  PRIVATE find_weight(A) : list
+}
+
+' ============================================
+' Analysis Tools Classes
+' ============================================
+
+class WeightPerturbation {
+  PUBLIC task : TaskRanking
+  PUBLIC decider : Decider
+  PUBLIC perturb_rg : numeric
+  PUBLIC perturb_n : integer
+  PUBLIC orig_rslt : ResultRanking
+  PUBLIC perturb_w : matrix
+  PUBLIC perturb_rslt : list
+  --
+  PUBLIC initialize(task, decider, perturb_rg, perturb_n)
+  PUBLIC weight_perturb()
+  PUBLIC perturb_rank() : matrix
+  PUBLIC perturb_stab_plot(type) : ggplot
+  PUBLIC perturb_rank_corr(method) : matrix
+  PUBLIC perturb_corr_heatmap(method) : pheatmap
+  --
+  PRIVATE generate_oat_weights() : matrix
+  PRIVATE copy_task(new_weights) : TaskRanking
+}
+
+class AlgoRankCorrelation {
+  PUBLIC task : TaskRanking
+  PUBLIC decider : list<Decider>
+  PUBLIC correlation_matrix : matrix
+  --
+  PUBLIC initialize(task, decider)
+  PUBLIC calculate() : matrix
+  PUBLIC print()
+}
+
+' ============================================
+' Inheritance Relationships
+' ============================================
+
+TaskResult <|-- ResultRanking
+TaskResult <|-- ResultSorting
+TaskResult <|-- ResultChoice
+
+TaskDecision <|-- TaskRanking
+TaskDecision <|-- TaskSorting
+TaskDecision <|-- TaskChoice
+
+Decider <|-- DeciderTOPSIS
+Decider <|-- DeciderPROMETHEE
+Decider <|-- DeciderAHP
+
+' ============================================
+' Dependency Relationships
+' ============================================
+
+Decider ..> TaskDecision : uses
+Decider ..> TaskResult : creates
+TaskResult ..> TaskDecision : contains (in metadata)
+
+WeightPerturbation ..> TaskRanking : uses
+WeightPerturbation ..> Decider : uses
+WeightPerturbation ..> ResultRanking : uses
+
+AlgoRankCorrelation ..> TaskRanking : uses
+AlgoRankCorrelation ..> Decider : uses (list)
+AlgoRankCorrelation ..> ResultRanking : uses
+
+' ============================================
+' Method Call Relationships
+' ============================================
+
+Decider::solve --> TaskDecision : input
+Decider::solve --> TaskResult : output
+Decider::compute --> TaskDecision : input
+Decider::compute --> numeric : output
+
+WeightPerturbation::weight_perturb --> Decider::solve
+WeightPerturbation::perturb_rank --> ResultRanking::ranking_table
+
+AlgoRankCorrelation::calculate --> Decider::solve
+AlgoRankCorrelation::calculate --> ResultRanking::ranking_table
+
+' ============================================
+' Notes and Annotations
+' ============================================
+
+note right of Decider::solve
+  **Template Method Pattern:**
+  1. Validates task
+  2. Calls compute() (implemented by subclasses)
+  3. Creates appropriate Result subclass
+  4. Returns TaskResult
+end note
+
+note right of TaskResult::metadata
+  **Contains:**
+  - task: TaskDecision
+  - algorithm_name: character
+  - algorithm-specific state
+  - intermediate calculations
+end note
+
+note right of TaskDecision::task_data
+  **Data Container:**
+  - alt: character[]
+  - crit: character[]
+  - perf: matrix (optional)
+  - weight: numeric[] (optional)
+  - direction: character[] (optional)
+  - pair_crit: matrix (optional, AHP)
+  - pair_alt: list (optional, AHP)
+  - cat_names: character[] (optional, sorting)
+  - prof: matrix (optional, sorting)
+  - judge_alt_profile: data.frame (optional, AHPSort)
+end note
+
+note right of Decider::state
+  **State Storage:**
+  - task: TaskDecision
+  - algorithm_name: character
+  - Algorithm-specific data:
+    * TOPSIS: prof_flow (sorting)
+    * PROMETHEE: prof_flow (sorting)
+    * AHP: crit_weights, local_alt_mat, etc.
+end note
+
+note bottom of WeightPerturbation
+  **OAT Weight Perturbation:**
+  - One-At-A-Time method
+  - Generates perturbed weight sets
+  - Analyzes rank stability
+  - Supports visualization
+end note
+
+note bottom of AlgoRankCorrelation
+  **Algorithm Comparison:**
+  - Compares multiple algorithms
+  - Computes Spearman correlation
+  - Supports ranking tasks only
+  - Handles failed deciders gracefully
+end note
+
+' ============================================
+' Package Grouping
+' ============================================
+
+package "Core Classes" {
+  TaskResult
+  TaskDecision
+  Decider
+}
+
+package "Result Classes" {
+  ResultRanking
+  ResultSorting
+  ResultChoice
+}
+
+package "Task Classes" {
+  TaskRanking
+  TaskSorting
+  TaskChoice
+}
+
+package "Algorithm Classes" {
+  DeciderTOPSIS
+  DeciderPROMETHEE
+  DeciderAHP
+}
+
+package "Analysis Tools" {
+  WeightPerturbation
+  AlgoRankCorrelation
+}
+
+@enduml
+

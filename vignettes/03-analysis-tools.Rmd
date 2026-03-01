@@ -1,0 +1,327 @@
+---
+title: "Analysis Tools: WeightPerturbation and AlgoRankCorrelation in mcdaHub"
+author: "Wanting Zuo"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Analysis Tools: WeightPerturbation and AlgoRankCorrelation in mcdaHub}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 8,
+  fig.height = 6
+)
+```
+
+```{r setup, include = FALSE}
+library(mcdaHub)
+library(ggplot2)
+# Load datasets for vignette
+# Use data() in a new environment to avoid conflicts with R's built-in datasets
+env <- new.env()
+data(cars, package = "mcdaHub", envir = env)
+cars_data <- env$cars
+```
+
+# Analysis Tools: WeightPerturbation and AlgoRankCorrelation in mcdaHub
+
+This vignette demonstrates how to use `WeightPerturbation` for sensitivity analysis and `AlgoRankCorrelation` for comparing different MCDA algorithms.
+
+## Part 1: WeightPerturbation Class
+
+`WeightPerturbation` performs sensitivity analysis through weight perturbation to understand how robust your MCDA results are to changes in criterion weights.
+
+### Overview
+
+The `WeightPerturbation` class implements One-At-A-Time (OAT) weight perturbation:
+- Varies one criterion weight at a time
+- Keeps other weights proportional
+- Analyzes how rankings change across perturbation scenarios
+
+### Creating WeightPerturbation Object
+
+```{r weight-perturbation-create}
+# Create a ranking task
+task <- TaskRanking$new(
+  alt = cars_data$alt,
+  crit = cars_data$crit,
+  perf = cars_data$perf,
+  weight = cars_data$weight,
+  direction = cars_data$direction
+)
+
+# Create a decider
+decider <- DeciderTOPSIS$new()
+
+# Create WeightPerturbation object
+wp <- WeightPerturbation$new(
+  task = task,
+  decider = decider,
+  perturb_rg = 0.3,  
+  perturb_n = 50     
+)
+
+# Display the object
+print(wp)
+```
+
+**Key Parameters:**
+- `task`: TaskRanking object (only ranking tasks are supported)
+- `decider`: Decider object (DeciderTOPSIS, DeciderPROMETHEE, etc.)
+- `perturb_rg`: Perturbation range (0.1 to 0.5) - how much to vary weights
+- `perturb_n`: Number of steps per criterion (50 to 200) - resolution of analysis
+
+### Using weight_perturb() Method
+
+```{r weight-perturbation-run}
+# Perform weight perturbation analysis
+wp$weight_perturb()
+
+# This method:
+# 1. Solves the task with original weights (baseline)
+# 2. Generates perturbed weight sets using OAT method
+# 3. Solves the task for each perturbed weight set
+# 4. Stores all results for further analysis
+```
+
+### Using perturb_rank() Method
+
+```{r perturb-rank}
+# Extract rank matrix (scenarios × alternatives)
+rank_mat <- wp$perturb_rank()
+
+# View the rank matrix
+head(rank_mat)
+
+# Dimensions: (scenarios × alternatives)
+dim(rank_mat)
+
+# Each row represents a perturbation scenario
+# Each column represents an alternative
+# Values are ranks (1 = best, higher numbers = worse)
+```
+
+**What perturb_rank() returns:**
+- Matrix with dimensions (scenarios × alternatives)
+- Each row: one perturbation scenario
+- Each column: one alternative
+- Values: ranks (1 = best)
+
+### Using perturb_stab_plot() Method
+
+```{r perturb-stab-plot-trajectory, eval = FALSE}
+# Rank trajectory plot
+# Shows how each alternative's rank changes across scenarios
+p1 <- wp$perturb_stab_plot(type = "trajectory")
+print(p1)
+```
+
+```{r perturb-stab-plot-sd, eval = FALSE}
+# Standard deviation plot
+# Shows standard deviation of ranks for each alternative
+p2 <- wp$perturb_stab_plot(type = "sd")
+print(p2)
+```
+
+**Plot Types:**
+- `type = "trajectory"`: Shows how each alternative's rank changes across scenarios (line plot)
+- `type = "sd"`: Shows standard deviation of ranks for each alternative (bar plot)
+
+**Interpretation:**
+- **Trajectory plot**: Flat lines indicate stable rankings; wavy lines indicate sensitivity
+- **SD plot**: Lower SD values indicate more stable rankings
+
+### Using perturb_corr_heatmap() Method
+
+```{r perturb-corr-heatmap, eval = FALSE}
+# Correlation heatmap between perturbation scenarios
+# Shows how similar rankings are across different weight perturbations
+heatmap <- wp$perturb_corr_heatmap(method = "spearman")
+print(heatmap)
+```
+
+**Parameters:**
+- `method`: Correlation method ("spearman", "kendall", or "pearson")
+
+**What it shows:**
+- Heatmap of correlations between different perturbation scenarios
+- High correlation (red) = similar rankings
+- Low correlation (blue) = different rankings
+
+### Using perturb_rank_corr() Method
+
+```{r perturb-rank-corr, eval = FALSE}
+# Calculate rank correlation matrix between scenarios
+# Note: This requires weight_perturb() to be run first
+corr_matrix <- wp$perturb_rank_corr(method = "spearman")
+
+# View correlation matrix
+head(corr_matrix)
+
+# Dimensions: (scenarios × scenarios)
+dim(corr_matrix)
+```
+
+**What it returns:**
+- Correlation matrix (scenarios × scenarios)
+- Shows how similar rankings are between different perturbation scenarios
+
+## Part 2: AlgoRankCorrelation Class
+
+`AlgoRankCorrelation` compares rankings from different MCDA algorithms to assess consistency.
+
+### Overview
+
+The `AlgoRankCorrelation` class:
+- Takes a TaskRanking and a list of Decider objects
+- Solves the task with each decider
+- Computes pairwise Spearman correlations between rankings
+- Helps assess whether different methods produce consistent results
+
+### Creating AlgoRankCorrelation Object
+
+```{r algo-correlation-create}
+# Create a ranking task
+task <- TaskRanking$new(
+  alt = cars_data$alt,
+  crit = cars_data$crit,
+  perf = cars_data$perf,
+  weight = cars_data$weight,
+  direction = cars_data$direction
+)
+
+# Create multiple deciders
+decider1 <- DeciderTOPSIS$new()
+decider2 <- DeciderPROMETHEE$new()
+
+# Create AlgoRankCorrelation object
+analyzer <- AlgoRankCorrelation$new(
+  task = task,
+  decider = list(decider1, decider2)
+)
+```
+
+**Key Parameters:**
+- `task`: TaskRanking object (only ranking tasks are supported)
+- `decider`: List of Decider objects (at least 2 required)
+
+### Using calculate() Method
+
+```{r algo-correlation-calculate}
+# Calculate correlation matrix between algorithm rankings
+corr_matrix <- analyzer$calculate()
+
+# View correlation matrix
+print(analyzer)
+
+# Access the correlation matrix directly
+analyzer$correlation_matrix
+```
+
+**What calculate() does:**
+1. Solves the task with each decider to get ResultRanking objects
+2. Extracts rankings from all ResultRanking objects
+3. Validates that all results contain the same alternatives
+4. Computes pairwise Spearman correlations between rankings
+5. Returns correlation matrix (algorithms × algorithms)
+
+**Correlation values:**
+- **1.0**: Perfect positive correlation (identical rankings)
+- **0.0**: No correlation (random relationship)
+- **-1.0**: Perfect negative correlation (opposite rankings)
+- **> 0.7**: Strong positive correlation (consistent results)
+- **< 0.3**: Weak correlation (inconsistent results)
+
+### Using print() Method
+
+```{r algo-correlation-print}
+# Print correlation matrix
+print(analyzer)
+```
+
+## Understanding Results
+
+### Weight Perturbation Results
+
+**High rank stability means:**
+- Rankings don't change much with weight variations
+- Your decision is robust to weight uncertainty
+- Weights are well-calibrated
+
+**Low rank stability means:**
+- Rankings are sensitive to weight changes
+- You should carefully justify your weights
+- Consider collecting more information or using weight elicitation methods
+
+### Algorithm Correlation Results
+
+**High correlation (close to 1) means:**
+- Algorithms produce similar rankings
+- Results are consistent across methods
+- Increased confidence in the decision
+
+**Low correlation means:**
+- Algorithms produce different rankings
+- Results depend on the method chosen
+- Consider the problem characteristics when choosing a method
+- May indicate that the problem is ambiguous or weights are not well-defined
+
+## Best Practices
+
+### Weight Perturbation
+
+1. **Choose Appropriate Range**: 
+   - `perturb_rg = 0.1-0.3`: Small variations (recommended for most cases)
+   - `perturb_rg = 0.3-0.5`: Large variations (stress testing)
+
+2. **Sufficient Steps**: 
+   - `perturb_n = 51`: Good balance between resolution and computation time
+   - `perturb_n = 101+`: Smoother curves, slower computation
+
+3. **Interpret with Context**: 
+   - High sensitivity doesn't always mean bad weights
+   - Consider your problem's characteristics
+   - Use domain knowledge to validate results
+
+4. **Compare Methods**: 
+   - Different methods may have different sensitivities
+   - Consistent results across methods increase confidence
+
+### Algorithm Comparison
+
+1. **Use Multiple Methods**: Compare at least 2-3 different algorithms
+
+2. **Interpret Correlations**: 
+   - High correlation increases confidence
+   - Low correlation suggests method-dependent results
+
+3. **Consider Problem Type**: 
+   - Some methods may be more suitable for certain problem types
+   - Use domain knowledge to guide method selection
+
+4. **Document Findings**: 
+   - Record which algorithms were compared
+   - Note correlation values
+   - Report any inconsistencies
+
+## Tips
+
+- Start with moderate perturbation ranges (0.2-0.3)
+- Use trajectory plots to identify problematic alternatives
+- Focus on criteria with high sensitivity
+- Compare multiple algorithms to validate results
+- Document your findings for reproducibility
+
+## Summary
+
+| Class | Purpose | Key Methods |
+|-------|---------|-------------|
+| `WeightPerturbation` | Sensitivity analysis | `weight_perturb()`, `perturb_rank()`, `perturb_stab_plot()`, `perturb_corr_heatmap()` |
+| `AlgoRankCorrelation` | Algorithm comparison | `calculate()`, `print()` |
+
+

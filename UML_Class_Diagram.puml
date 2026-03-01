@@ -1,0 +1,164 @@
+@startuml mcdaHub_Package_Class_Diagram
+
+!define PUBLIC + 
+!define PRIVATE - 
+!define PROTECTED #
+
+' ============================================
+' Task Result Classes
+' ============================================
+
+abstract class TaskResult {
+  PUBLIC task_type : character
+  PUBLIC raw_result : numeric
+  PUBLIC metadata : list
+  PUBLIC initialize(task_type, raw_result, metadata)
+}
+
+class ResultRanking {
+  PUBLIC ranking_table : data.frame
+  PUBLIC initialize(raw_result, metadata)
+  PUBLIC print()
+  --
+  PRIVATE n_alternatives : integer
+}
+
+class ResultSorting {
+  PUBLIC categories : character[]
+  PUBLIC sorting_table : data.frame
+  PUBLIC initialize(raw_result, metadata)
+  PUBLIC print()
+  PRIVATE assign_categories(raw_result, metadata)
+}
+
+class ResultChoice {
+  PUBLIC choice : character[]
+  PUBLIC choice_table : data.frame
+  PUBLIC initialize(raw_result, metadata)
+  PUBLIC print()
+}
+
+' ============================================
+' Task Decision Classes
+' ============================================
+
+abstract class TaskDecision {
+  PUBLIC alt : character[]
+  PUBLIC crit : character[]
+  PUBLIC perf : matrix
+  PUBLIC w : numeric[]
+  PUBLIC d : character[]
+  PUBLIC type : character
+  PUBLIC initialize(alt, crit, perf, w, d, type, normalize_weights)
+  PUBLIC validate(normalize_weights)
+  PUBLIC n_alt() : integer
+  PUBLIC n_crit() : integer
+  PUBLIC get_perf(alt_name, crit_name) : matrix | numeric
+  PUBLIC set_perf(perf, normalize_weights)
+  PUBLIC alt_names() : character[]
+  PUBLIC crit_names() : character[]
+  PUBLIC set_w(weights, normalize_weights)
+  PUBLIC set_d(directions)
+  PUBLIC get_w(crit_name) : numeric
+  PUBLIC get_d(crit_name) : character
+}
+
+class TaskRanking {
+  PUBLIC initialize(alt, crit, perf, w, d, normalize_weights)
+  PUBLIC print()
+}
+
+class TaskSorting {
+  PUBLIC n_cats : integer
+  PUBLIC cat_names : character[]
+  PUBLIC cats : list
+  PUBLIC prof : matrix
+  PUBLIC prof_order : character[]
+  PUBLIC assign_rule : character
+  PUBLIC initialize(alt, crit, perf, w, d, n_cats, cat_names, cats, prof, prof_order, assign_rule, normalize_weights)
+}
+
+class TaskChoice {
+  PUBLIC initialize(alt, crit, perf, w, d, normalize_weights)
+}
+
+' ============================================
+' Decider Classes
+' ============================================
+
+abstract class Decider {
+  PUBLIC state : list
+  PUBLIC initialize()
+  PUBLIC solve(task : TaskDecision) : TaskResult
+  --
+  PRIVATE {abstract} compute(task : TaskDecision) : numeric
+}
+
+class DeciderTOPSIS {
+  PUBLIC initialize()
+  PUBLIC compute(task) : numeric
+  PRIVATE normalize_matrix(M) : matrix
+  PRIVATE compute_ideal_points(norm_M, d) : list
+  PRIVATE compute_ranking_choice(task) : numeric
+  PRIVATE compute_sorting(task) : numeric
+}
+
+class DeciderPROMETHEE {
+  PUBLIC initialize()
+  PUBLIC compute(task) : numeric
+  PRIVATE preprocess_matrix(M, d, row_ids, crit_names) : list
+  PRIVATE compute_ranking_choice(task) : numeric
+  PRIVATE compute_sorting(task) : numeric
+}
+
+' ============================================
+' Inheritance Relationships
+' ============================================
+
+TaskResult <|-- ResultRanking
+TaskResult <|-- ResultSorting
+TaskResult <|-- ResultChoice
+
+TaskDecision <|-- TaskRanking
+TaskDecision <|-- TaskSorting
+TaskDecision <|-- TaskChoice
+
+Decider <|-- DeciderTOPSIS
+Decider <|-- DeciderPROMETHEE
+
+' ============================================
+' Dependency Relationships
+' ============================================
+
+Decider ..> TaskDecision : uses
+Decider ..> TaskResult : creates
+TaskResult ..> TaskDecision : contains (in metadata)
+
+' ============================================
+' Usage Relationships
+' ============================================
+
+Decider::solve --> TaskDecision : input
+Decider::solve --> TaskResult : output
+Decider::compute --> TaskDecision : input
+Decider::compute --> numeric : output
+
+note right of Decider::solve
+  Template Method Pattern:
+  1. Validates task
+  2. Calls compute() (implemented by subclasses)
+  3. Creates appropriate Result subclass
+  4. Returns TaskResult
+end note
+
+note right of TaskResult::metadata
+  Contains:
+  - task: TaskDecision
+  - algorithm-specific state
+  - intermediate calculations
+end note
+
+@enduml
+
+
+
